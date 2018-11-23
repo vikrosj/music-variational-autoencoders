@@ -1,4 +1,5 @@
 import numpy as np
+from numba import jit
 np.set_printoptions(threshold=10e6)
 
 n_unique = 131
@@ -49,19 +50,32 @@ def slice_songs(dataset, num_steps):
         songs.append(slices)
     return songs
 
+
 def generate_sequence(seq):
     rp = np.random.randint(0,len(seq))
     new_sequence = seq[rp]
     return new_sequence
+
 
 def one_hot_encode(sequence, n_unique=n_unique):
     encoding = np.zeros((len(sequence),n_unique))
     encoding[np.arange(len(sequence)), sequence] = 1
     return encoding
 
-# decode a one hot encoded string
+
 def one_hot_decode(encoded_seq):
     return [np.argmax(vector) for vector in encoded_seq]
+
+
+def one_hot_decode_song(encoded_seq):
+    
+    full_song = []
+    
+    for seq in encoded_seq:
+    
+        full_song.append(one_hot_decode(seq))
+    
+    return np.ravel(np.array(full_song))
 
 # convert encoded sequence to supervised learning
 def to_supervised(sequence):
@@ -79,13 +93,7 @@ def to_supervised(sequence):
 def get_songs_dataset(dataset, timesteps):
     """Creating dataset of songs to further get dataset of z's"""
 
-    encoder_inputs = []
-    decoder_inputs = []
-    target = []
-
     songs = slice_songs(dataset, timesteps)
-    seq = np.array(songs)
-
     encoded_songs = []
 
     for song in songs:
@@ -95,7 +103,7 @@ def get_songs_dataset(dataset, timesteps):
             encoded_bars.append(encoded)
         encoded_songs.append(encoded_bars)
 
-    return encoded_songs
+    return np.array(encoded_songs)
 
 
 def get_bars_dataset(dataset, timesteps):
