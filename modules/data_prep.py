@@ -304,11 +304,12 @@ class VAEdataPrep:
         inputs["validation"] = validation_IDs
         inputs["test"] = test_IDs
 
-        np.save("datasets/id_lists/" + generator_IDs_file, inputs)
+        np.save(generator_IDs_file, inputs)
 
 
     def create_songs_dir(self,
                         encoder_directory,
+                        inference_ID_file,
                         dataset_file,
                         print_progress=True):   
         """
@@ -317,6 +318,7 @@ class VAEdataPrep:
         saves each song a numpy-array in user defined directory.
         
         :param encoder_directory: user defined name for directory of songs
+        :param inference_ID_file: user defined directory, important during inference, just place in datasets/id_lists/
         :param dataset_file: name of dataset to process
         :param print_progress: both boolean option and integer. 
         If True: prints progress for each song. 
@@ -353,6 +355,15 @@ class VAEdataPrep:
             np.save(encoder_filename, encoder_inputs[j])
 
             pointer += 1
+            
+        inputs = {}
+        # generator setup
+        size_of_dataset = len([f for f in os.listdir(encoder_directory + "/")])
+
+        IDs = ['id-'+ str(i) for i in range(size_of_dataset)]
+        inputs["test"] = IDs
+
+        np.save(inference_ID_file, inputs)
 
 
 class MDNdataPrep:
@@ -429,7 +440,7 @@ class MDNdataPrep:
 
         h5f.close()
         
-    def slice_z_data_for_mdn(self, sliced_z_dataset_file, mdn_seq_len):
+    def slice_z_data_for_mdn(self, sliced_z_dataset_file, generator_IDs_file, mdn_seq_len):
 
         zs_file = h5py.File(self.z_dataset_file, 'r')
 
@@ -473,3 +484,26 @@ class MDNdataPrep:
 
         zs_file.close()
         mdn_file.close()
+        
+        
+        hf_mdn = h5py.File(sliced_z_dataset_file, 'r')
+
+        size_of_dataset = len(list(hf_mdn.keys()))//2
+
+        hf_mdn.close()
+
+        training_set_size = 2 * size_of_dataset // 3
+        validation_set_size = size_of_dataset // 6
+        test_set_size = size_of_dataset // 6
+
+        inputs = {}
+        
+        training_IDs = ['id-'+str(i) for i in range(training_set_size)]
+        validation_IDs = ['id-'+str(i+training_set_size) for i in range(validation_set_size)]
+        test_IDs = ['id-'+str(i+training_set_size+validation_set_size) for i in range(test_set_size)]
+        
+        inputs["train"] = training_IDs
+        inputs["validation"] = validation_IDs
+        inputs["test"] = test_IDs
+        
+        np.save(generator_IDs_file, inputs)
